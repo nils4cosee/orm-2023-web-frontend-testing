@@ -1,19 +1,18 @@
 import { renderComponent } from "../test-utils/renderComponent";
 import Counter from "./Counter.vue";
-import { describe, it, expect } from "vitest";
-import { nextTick, reactive, ref } from "vue";
+import { describe, expect, it } from "vitest";
+import { ref } from "vue";
 import { waitFor } from "@testing-library/vue";
 
 function renderCounter({ label = "Label:", model = ref(0) } = {}) {
-  let props = reactive({
+  const renderResult = renderComponent(Counter, {
     label,
     modelValue: model,
     "onUpdate:modelValue": (v: number) => {
       model.value = v;
-      renderResult.rerender({ modelValue: model.value });
+      renderResult.rerender({ modelValue: model.value }).catch(console.error);
     },
   });
-  const renderResult = renderComponent(Counter, props);
   return renderResult;
 }
 describe("Counter", () => {
@@ -40,15 +39,14 @@ describe("Counter", () => {
   it("clicking the button increases the value", async () => {
     const count = ref(5);
     const { screen, user } = renderCounter({
-      label: "Hits: ",
+      label: "Counter: ",
       model: count,
     });
-    await user.click(screen.getByText("Hits:", { exact: false }));
-    await nextTick();
-    await nextTick();
-    expect(count.value).toBe(6);
+    const button = screen.getByText("Counter", { exact: false });
+    await user.click(button);
     await waitFor(() => {
-      expect(screen.getByRole("button")).toHaveTextContent(/Hits: 6/);
+      expect(count.value).toBe(6);
+      expect(screen.getByRole("button")).toHaveTextContent(/Counter: 6/);
     });
   });
 });

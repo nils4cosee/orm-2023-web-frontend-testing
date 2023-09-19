@@ -1,16 +1,17 @@
-import { describe, expect, it } from "vitest";
+import {describe, expect, it, vi} from "vitest";
 import { renderComponent } from "../test-utils/renderComponent.ts";
 import CounterSum from "./CounterSum.vue";
-import { debug } from "vitest-preview";
 import { screen } from "@testing-library/vue";
 import userEvent from "@testing-library/user-event";
+import {copyToClipboard} from "../browser/copyToClipboard.ts";
 
 type UserEvent = ReturnType<typeof userEvent.setup>;
+
+vi.mock("../browser/copyToClipboard")
 
 describe("CounterSum", () => {
   it("shows the counter", () => {
     const { screen } = renderComponent(CounterSum, {});
-    debug();
     expect(screen.getByText(/One/)).toHaveTextContent("One 0");
   });
 
@@ -28,6 +29,14 @@ describe("CounterSum", () => {
       "Sum: 2",
     );
   });
+
+  it("Copies the sum to the clipboard", async () => {
+    const { screen, user } = renderComponent(CounterSum, {});
+    await incrementCounter(user, "One");
+    await incrementCounter(user, "Two");
+    await user.click(screen.getByText("Copy to clipboard"))
+    expect(copyToClipboard).toHaveBeenCalledWith("2")
+  })
 });
 
 async function incrementCounter(user: UserEvent, label: string) {
