@@ -1,5 +1,8 @@
 <script setup lang="ts">
-const props = defineProps<{ label: string, modelValue: number }>();
+const props = defineProps<{
+  label: string,
+  modelValue: number
+}>();
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: number): void;

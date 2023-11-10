@@ -12,6 +12,7 @@
     "test": "run-p test:*"
   },
   "dependencies": {
+    "nanoid": "^5.0.3",
     "vue": "^3.3.4"
   },
   "devDependencies": {

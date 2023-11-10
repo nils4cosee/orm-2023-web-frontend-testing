@@ -1,19 +1,41 @@
 import { renderComponent } from "../test-utils/renderComponent";
 import Counter from "./Counter.vue";
-import { describe, expect, it } from "vitest";
-import { ref } from "vue";
+import {describe, expect, it, vi} from "vitest";
+import {defineComponent, ref, watchSyncEffect} from "vue";
 import { waitFor } from "@testing-library/vue";
 
-function renderCounter({ label = "Label:", model = ref(0) } = {}) {
-  const renderResult = renderComponent(Counter, {
-    label,
-    modelValue: model,
-    "onUpdate:modelValue": (v: number) => {
-      model.value = v;
-      renderResult.rerender({ modelValue: model.value }).catch(console.error);
+const CounterTest = defineComponent({
+  name: "CounterTest",
+  components: { Counter },
+  props: {
+    label: {
+      type: String,
     },
+    initialValue: {
+      type: Number,
+      required: true
+    },
+    onUpdate: {
+      type: Function,
+      required: true
+    }
+  },
+  setup(props) {
+    const modelValue = ref<number>(props.initialValue);
+    watchSyncEffect(() => {
+      props.onUpdate(modelValue)
+    })
+    return { modelValue };
+  },
+  template: `
+      <Counter :label="label" v-model="modelValue" @update:modelValue="$emit('update', $event)"/>
+  `,
+});
+
+function renderCounter({ label = "Label:", initialValue = 0, onUpdate = (_value: number) => {} }) {
+  return renderComponent(CounterTest, {
+    label, initialValue, onUpdate
   });
-  return renderResult;
 }
 describe("Counter", () => {
   it("renders a button", () => {
@@ -27,25 +49,26 @@ describe("Counter", () => {
   });
 
   it("renders the counter value", () => {
-    const { screen } = renderCounter({ label: "Counter: ", model: ref(0) });
+    const { screen } = renderCounter({ label: "Counter: " });
     expect(screen.getByRole("button")).toHaveTextContent(/Counter: 0/);
   });
 
   it("renders different values", () => {
-    const { screen } = renderCounter({ label: "Hits: ", model: ref(5) });
+    const { screen } = renderCounter({ label: "Hits: ", initialValue: 5 });
     expect(screen.getByRole("button")).toHaveTextContent(/Hits: 5/);
   });
 
   it("clicking the button increases the value", async () => {
-    const count = ref(5);
+    const onUpdate = vi.fn()
     const { screen, user } = renderCounter({
       label: "Counter: ",
-      model: count,
+      initialValue: 5,
+      onUpdate
     });
     const button = screen.getByText("Counter", { exact: false });
     await user.click(button);
     await waitFor(() => {
-      expect(count.value).toBe(6);
+      expect(onUpdate).toHaveBeenCalledWith(6)
       expect(screen.getByRole("button")).toHaveTextContent(/Counter: 6/);
     });
   });
